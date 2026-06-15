@@ -1,0 +1,342 @@
+import { useState } from "react";
+import { Calendar, MapPin, Clock, Search, Sparkles, Users, Music, Palette, MessageCircle, ExternalLink, Plus, X } from "lucide-react";
+
+/* MARKER-MAKE-KIT-INVOKED */
+
+const CATEGORIES = [
+  { id: "alle", label: "Alle Events", color: "from-fuchsia-500 to-violet-600" },
+  { id: "party", label: "Party", color: "from-pink-500 to-rose-600" },
+  { id: "kultur", label: "Kultur", color: "from-amber-500 to-orange-600" },
+  { id: "beratung", label: "Beratung", color: "from-emerald-500 to-teal-600" },
+  { id: "community", label: "Community", color: "from-sky-500 to-blue-600" },
+  { id: "demo", label: "Demo & Politik", color: "from-violet-500 to-purple-600" },
+];
+
+const EVENTS = [
+  {
+    id: 1,
+    title: "Rainbow Friday – Monatliche Queer Party",
+    date: "2026-06-20",
+    time: "22:00",
+    location: "Club Voltaire, Aachen",
+    category: "party",
+    description: "Die größte monatliche queere Party in Aachen. DJ-Sets, Drag-Shows und eine offene, inklusive Atmosphäre für alle.",
+    tags: ["LGBTQ+", "Drag", "Tanzen"],
+    link: "https://example.com/rainbow-friday",
+    emoji: "🏳️‍🌈",
+  },
+  {
+    id: 2,
+    title: "Queer Stammtisch – Offen für alle",
+    date: "2026-06-22",
+    time: "19:00",
+    location: "Café KAZ, Pontstraße 74",
+    category: "community",
+    description: "Ungezwungenes Treffen zum Kennenlernen, Austauschen und Vernetzen. Alle queeren Menschen und Allies sind herzlich willkommen.",
+    tags: ["Stammtisch", "Networking"],
+    link: "https://schwules-zentrum-aachen.de",
+    emoji: "💜",
+  },
+  {
+    id: 3,
+    title: "Queer Filmabend – 'Portrait of a Lady on Fire'",
+    date: "2026-06-25",
+    time: "20:00",
+    location: "Filmhaus Aachen, Gasborn 7",
+    category: "kultur",
+    description: "Screening des gefeierten Films mit anschließender Diskussion. Eintritt frei – Spenden willkommen.",
+    tags: ["Film", "Kunst", "Diskussion"],
+    link: "https://filmhaus-aachen.de",
+    emoji: "🎬",
+  },
+  {
+    id: 4,
+    title: "LGBTQ+ Rechtsberatung",
+    date: "2026-06-26",
+    time: "14:00",
+    location: "Schwules Zentrum Aachen, Promenadenstraße",
+    category: "beratung",
+    description: "Kostenlose Rechtsberatung zu Themen wie Namensänderung, Antidiskriminierung und Partnerschaftsrecht. Anmeldung erforderlich.",
+    tags: ["Recht", "Beratung", "Kostenlos"],
+    link: "https://schwules-zentrum-aachen.de/beratung",
+    emoji: "⚖️",
+  },
+  {
+    id: 5,
+    title: "Aachen Pride 2026 – Kundgebung & Demo",
+    date: "2026-07-04",
+    time: "13:00",
+    location: "Katschhof, Aachen Innenstadt",
+    category: "demo",
+    description: "Gemeinsam auf die Straße für Sichtbarkeit, Gleichberechtigung und Solidarität. Der jährliche Höhepunkt der Aachener Pride-Saison.",
+    tags: ["Pride", "Demo", "Solidarität"],
+    link: "https://csd-aachen.de",
+    emoji: "✊",
+  },
+  {
+    id: 6,
+    title: "Queer Yoga – Körper & Seele",
+    date: "2026-07-05",
+    time: "10:00",
+    location: "Kulturzentrum Südbad, Aachen",
+    category: "community",
+    description: "Yoga-Kurs in einem sicheren, queeren Raum. Für alle Erfahrungslevel. Bitte eigene Matte mitbringen.",
+    tags: ["Sport", "Wellness", "Inklusion"],
+    link: "",
+    emoji: "🧘",
+  },
+  {
+    id: 7,
+    title: "Drag Brunch – Glitter & Granola",
+    date: "2026-07-12",
+    time: "11:00",
+    location: "Restaurant Goldener Schwan, Münsterplatz",
+    category: "party",
+    description: "Sonntagsbrunch mit Drag-Performances, Cocktails und queerer Energie. Tische bitte im Voraus reservieren.",
+    tags: ["Drag", "Brunch", "Feier"],
+    link: "https://instagram.com/dragbrunchaachen",
+    emoji: "👸",
+  },
+  {
+    id: 8,
+    title: "Queere Kunstausstellung – 'Sichtbar'",
+    date: "2026-07-18",
+    time: "18:00",
+    location: "Galerie am Dom, Aachen",
+    category: "kultur",
+    description: "Vernissage einer Gruppenausstellung mit queeren Künstler*innen aus der Region. Finissage am 10. August.",
+    tags: ["Kunst", "Ausstellung", "Vernissage"],
+    link: "https://galerie-am-dom-aachen.de",
+    emoji: "🎨",
+  },
+];
+
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  party: <Music size={13} />,
+  kultur: <Palette size={13} />,
+  beratung: <MessageCircle size={13} />,
+  community: <Users size={13} />,
+  demo: <Sparkles size={13} />,
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  party: "bg-pink-500/20 text-pink-300 border-pink-500/30",
+  kultur: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+  beratung: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  community: "bg-sky-500/20 text-sky-300 border-sky-500/30",
+  demo: "bg-violet-500/20 text-violet-300 border-violet-500/30",
+};
+
+function formatDate(dateStr: string) {
+  const date = new Date(dateStr + "T00:00:00");
+  return date.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "long" });
+}
+
+type Event = typeof EVENTS[0];
+
+function EventCard({ event }: { event: Event }) {
+  const catColor = CATEGORY_COLORS[event.category] ?? "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30";
+  const catLabel = CATEGORIES.find(c => c.id === event.category)?.label ?? event.category;
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-white/10 bg-card hover:border-white/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-fuchsia-900/20">
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap gap-2 mb-2.5">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border ${catColor}`}>
+                {CATEGORY_ICONS[event.category]}
+                {catLabel}
+              </span>
+            </div>
+            <h3 className="leading-snug text-card-foreground" style={{ fontSize: "0.975rem", fontWeight: 700 }}>
+              {event.title}
+            </h3>
+          </div>
+          <span className="text-3xl shrink-0 mt-0.5">{event.emoji}</span>
+        </div>
+
+        <p className="text-sm text-muted-foreground leading-relaxed mb-4">{event.description}</p>
+
+        <div className="space-y-1.5 mb-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar size={13} className="shrink-0 text-fuchsia-400" />
+            <span>{formatDate(event.date)}</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock size={13} className="shrink-0 text-fuchsia-400" />
+            <span>{event.time} Uhr</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin size={13} className="shrink-0 text-fuchsia-400" />
+            <span className="truncate">{event.location}</span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {event.tags.map(tag => (
+            <span key={tag} className="px-2 py-0.5 rounded-full text-xs bg-secondary text-muted-foreground border border-white/5">
+              #{tag}
+            </span>
+          ))}
+        </div>
+
+        {event.link && (
+          <div className="pt-3 border-t border-white/5">
+            <a
+              href={event.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-fuchsia-400 hover:text-fuchsia-300 transition-colors"
+            >
+              <ExternalLink size={12} />
+              Zur Veranstaltungsseite
+            </a>
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
+export default function App() {
+  const [activeCategory, setActiveCategory] = useState("alle");
+  const [search, setSearch] = useState("");
+
+  const filtered = EVENTS.filter(e => {
+    const matchCat = activeCategory === "alle" || e.category === activeCategory;
+    const q = search.toLowerCase();
+    const matchSearch =
+      !q ||
+      e.title.toLowerCase().includes(q) ||
+      e.location.toLowerCase().includes(q) ||
+      e.tags.some(t => t.toLowerCase().includes(q));
+    return matchCat && matchSearch;
+  });
+
+  return (
+    <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-xl border-b border-white/5">
+        <div className="px-4 pt-4 pb-3">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-base"
+                  style={{ background: "linear-gradient(135deg, #f97316, #eab308, #22c55e, #3b82f6, #8b5cf6, #ec4899)" }}
+                >
+                  🏳️‍🌈
+                </div>
+                <h1 style={{ fontSize: "1.2rem", fontWeight: 800, background: "linear-gradient(90deg, #f472b6, #c084fc, #60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                  Queer in Aachen
+                </h1>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5 ml-0.5">Events · Community · Sichtbarkeit</p>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Events suchen…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-secondary border border-white/10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-fuchsia-500/50 transition-colors"
+            />
+            {search && (
+              <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label="Suche löschen">
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Category pills */}
+        <div className="px-4 pb-3 overflow-x-auto" style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}>
+          <div className="flex gap-2 w-max">
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`px-3.5 py-1.5 rounded-full text-sm whitespace-nowrap transition-all font-semibold border ${
+                  activeCategory === cat.id
+                    ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-md`
+                    : "bg-secondary border-white/10 text-muted-foreground hover:border-white/20 hover:text-foreground"
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <div
+        className="px-5 py-7 text-center relative overflow-hidden"
+        style={{ background: "linear-gradient(180deg, #1a0d2e 0%, #0f0b1a 100%)" }}
+      >
+        <div
+          className="absolute inset-0 opacity-30 pointer-events-none"
+          style={{ background: "radial-gradient(ellipse at 25% 60%, #c026d3 0%, transparent 55%), radial-gradient(ellipse at 75% 40%, #7c3aed 0%, transparent 55%)" }}
+        />
+        <div className="relative z-10">
+          <div className="flex justify-center gap-1 mb-2">
+            {"🔴🟠🟡🟢🔵🟣".split("").filter((_, i) => i % 2 === 0).map((c, i) => (
+              <span key={i} className="text-lg">{c}</span>
+            ))}
+          </div>
+          <p className="text-muted-foreground text-sm max-w-xs mx-auto leading-relaxed">
+            Dein Guide für queere Veranstaltungen, Community-Treffpunkte und LGBTQ+ Leben in Aachen.
+          </p>
+        </div>
+      </div>
+
+      {/* Result count */}
+      <div className="px-4 py-3 flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          <span className="text-foreground font-semibold">{filtered.length}</span>{" "}
+          {filtered.length === 1 ? "Event" : "Events"} gefunden
+        </p>
+        {(activeCategory !== "alle" || search) && (
+          <button
+            onClick={() => { setActiveCategory("alle"); setSearch(""); }}
+            className="text-xs text-fuchsia-400 hover:text-fuchsia-300 flex items-center gap-1 transition-colors"
+          >
+            <X size={11} /> Zurücksetzen
+          </button>
+        )}
+      </div>
+
+      {/* Events */}
+      <main className="px-4 pb-32 space-y-4">
+        {filtered.length === 0 ? (
+          <div className="text-center py-16 text-muted-foreground">
+            <div className="text-5xl mb-4">🔍</div>
+            <p className="text-foreground font-bold mb-1" style={{ fontSize: "1rem" }}>Keine Events gefunden</p>
+            <p className="text-sm">Versuche einen anderen Begriff oder eine andere Kategorie.</p>
+          </div>
+        ) : (
+          filtered.map(event => <EventCard key={event.id} event={event} />)
+        )}
+
+      </main>
+
+      {/* Bottom bar – Event vorschlagen */}
+      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-card/90 backdrop-blur-xl border-t border-white/10">
+        <div className="px-4 py-3">
+          <button
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90 active:opacity-75"
+            style={{ background: "linear-gradient(135deg, #c026d3, #7c3aed)" }}
+          >
+            <Plus size={16} />
+            Event vorschlagen
+          </button>
+        </div>
+      </nav>
+    </div>
+  );
+}
