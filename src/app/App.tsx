@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Calendar, MapPin, Clock, Search, Sparkles, Users, Music, Palette, MessageCircle, ExternalLink, Plus, X, Menu } from "lucide-react";
+import Impressum from "./pages/Impressum";
+import Datenschutz from "./pages/Datenschutz";
+import Vorschlagen from "./pages/Vorschlagen";
 
 /* MARKER-MAKE-KIT-INVOKED */
 
@@ -315,7 +318,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [page, setPage] = useState<"home" | "impressum" | "datenschutz">("home");
+  const [page, setPage] = useState<"home" | "impressum" | "datenschutz" | "vorschlagen">("home");
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -501,18 +504,7 @@ export default function App() {
       ) : null}
 
       {page !== "home" ? (
-        <main className="px-4 pb-32">
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold">
-              {page === "impressum" ? "Impressum" : "Datenschutz"}
-            </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {page === "impressum"
-                ? "Hier stehen die Impressumsinhalte. Bitte ergänze die rechtlichen Angaben."
-                : "Hier stehen die Datenschutzinhalte. Bitte ergänze Informationen zur Datenverarbeitung."}
-            </p>
-          </div>
-        </main>
+        page === "impressum" ? <Impressum /> : page === "datenschutz" ? <Datenschutz /> : <Vorschlagen />
       ) : (
         <>
           {/* Result count */}
@@ -551,17 +543,20 @@ export default function App() {
       )}
 
       {/* Bottom bar – Event vorschlagen */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-card/90 backdrop-blur-xl border-t border-white/10">
-        <div className="px-4 py-3">
-          <button
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90 active:opacity-75"
-            style={{ background: "linear-gradient(135deg, #c026d3, #7c3aed)" }}
-          >
-            <Plus size={16} />
-            Event vorschlagen
-          </button>
-        </div>
-      </nav>
+      {page !== "vorschlagen" && (
+        <nav className="fixed bottom-0 left-0 right-0 z-30 bg-card/90 backdrop-blur-xl border-t border-white/10">
+          <div className="px-4 py-3">
+            <button
+              onClick={() => setPage("vorschlagen")}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90 active:opacity-75"
+              style={{ background: "linear-gradient(135deg, #c026d3, #7c3aed)" }}
+            >
+              <Plus size={16} />
+              Event vorschlagen
+            </button>
+          </div>
+        </nav>
+      )}
     </div>
   );
 }
