@@ -318,8 +318,27 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [page, setPage] = useState<"home" | "impressum" | "datenschutz" | "vorschlagen">("home");
+  const [route, setRoute] = useState<"home" | "impressum" | "datenschutz" | "vorschlagen">(() => {
+    const path = typeof window !== "undefined" ? window.location.pathname.replace(/\/+$|^\//g, "") : "";
+    return path === "" ? "home" : (path === "impressum" || path === "datenschutz" || path === "vorschlagen" ? path : "home");
+  });
   const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.replace(/\/+$/g, "").replace(/^\//, "");
+      setRoute(path === "" ? "home" : (path === "impressum" || path === "datenschutz" || path === "vorschlagen" ? path : "home"));
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const navigate = (target: "home" | "impressum" | "datenschutz" | "vorschlagen") => {
+    const path = target === "home" ? "/" : `/${target}`;
+    window.history.pushState(null, "", path);
+    setRoute(target);
+  };
 
   useEffect(() => {
     // Public sheet CSV export (change SHEET_ID/GID if needed)
@@ -391,7 +410,7 @@ export default function App() {
             <div>
               <button
                 type="button"
-                onClick={() => setPage("home")}
+                onClick={() => navigate("home")}
                 className="flex items-center gap-2.5 mb-1 rounded-2xl text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
                 aria-label="Zur Startseite"
               >
@@ -419,7 +438,7 @@ export default function App() {
                 <div className="absolute right-0 top-full mt-3 w-48 rounded-3xl border border-white/10 bg-card p-3 shadow-lg shadow-black/20 z-[9999]">
                   <button
                     onClick={() => {
-                      setPage("impressum");
+                      navigate("impressum");
                       setMenuOpen(false);
                     }}
                     className="w-full text-left rounded-2xl px-3 py-2 text-sm text-foreground hover:bg-secondary"
@@ -428,7 +447,7 @@ export default function App() {
                   </button>
                   <button
                     onClick={() => {
-                      setPage("datenschutz");
+                      navigate("datenschutz");
                       setMenuOpen(false);
                     }}
                     className="w-full text-left rounded-2xl px-3 py-2 text-sm text-foreground hover:bg-secondary"
@@ -443,7 +462,7 @@ export default function App() {
         </div>
       </header>
 
-      {page === "home" && (
+      {route === "home" && (
         <div className="px-4 pb-3 space-y-3">
           <div className="relative">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -481,7 +500,7 @@ export default function App() {
         </div>
       )}
 
-      {page === "home" ? (
+      {route === "home" ? (
         <div
           className="px-5 py-7 text-center relative overflow-hidden"
           style={{ background: "linear-gradient(180deg, #1a0d2e 0%, #0f0b1a 100%)" }}
@@ -503,8 +522,8 @@ export default function App() {
         </div>
       ) : null}
 
-      {page !== "home" ? (
-        page === "impressum" ? <Impressum /> : page === "datenschutz" ? <Datenschutz /> : <Vorschlagen />
+      {route !== "home" ? (
+        route === "impressum" ? <Impressum /> : route === "datenschutz" ? <Datenschutz /> : <Vorschlagen />
       ) : (
         <>
           {/* Result count */}
@@ -543,11 +562,11 @@ export default function App() {
       )}
 
       {/* Bottom bar – Event vorschlagen */}
-      {page !== "vorschlagen" && (
+      {route !== "vorschlagen" && (
         <nav className="fixed bottom-0 left-0 right-0 z-30 bg-card/90 backdrop-blur-xl border-t border-white/10">
           <div className="px-4 py-3">
             <button
-              onClick={() => setPage("vorschlagen")}
+              onClick={() => navigate("vorschlagen")}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90 active:opacity-75"
               style={{ background: "linear-gradient(135deg, #c026d3, #7c3aed)" }}
             >
