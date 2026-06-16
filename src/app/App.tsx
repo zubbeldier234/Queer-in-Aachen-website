@@ -30,9 +30,109 @@ const CATEGORY_COLORS: Record<string, string> = {
   demo: "bg-violet-500/20 text-violet-300 border-violet-500/30",
 };
 
+function parseEventDates(dateStr: string): Date[] {
+  if (!dateStr) return [];
+
+  // Try to handle ranges (e.g., "28.-29.6.2026" or "28.6.-29.6.2026")
+  const rangeMatch = dateStr.match(/(\d{1,2})\.(\d{1,2})?\.?-(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+  if (rangeMatch) {
+    const startDay = parseInt(rangeMatch[1]);
+    const startMonth = rangeMatch[2] ? parseInt(rangeMatch[2]) : parseInt(rangeMatch[4]);
+    const startYear = parseInt(rangeMatch[5]);
+    const endDay = parseInt(rangeMatch[3]);
+    const endMonth = parseInt(rangeMatch[4]);
+    const endYear = parseInt(rangeMatch[5]);
+
+    const start = new Date(startYear, startMonth - 1, startDay);
+    const end = new Date(endYear, endMonth - 1, endDay);
+    const dates: Date[] = [];
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      dates.push(new Date(d));
+    }
+    return dates;
+  }
+
+  // Try to handle multiple dates separated by "+" or ","
+  const parts = dateStr.split(/[,+]+/).map(s => s.trim()).filter(Boolean);
+  const dates: Date[] = [];
+
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+
+    // Try German format: "28.6.2026" or "28.06.2026"
+    let dmy = part.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    if (dmy) {
+      const d = parseInt(dmy[1]);
+      const m = parseInt(dmy[2]);
+      const y = parseInt(dmy[3]);
+      dates.push(new Date(y, m - 1, d));
+      continue;
+    }
+
+    // Try abbreviated format: "28." (day only) — use month/year from next part
+    const abbrev = part.match(/^(\d{1,2})\.?$/);
+    if (abbrev && i + 1 < parts.length) {
+      const nextPart = parts[i + 1];
+      const nextDmy = nextPart.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+      if (nextDmy) {
+        const d = parseInt(abbrev[1]);
+        const m = parseInt(nextDmy[2]);
+        const y = parseInt(nextDmy[3]);
+        dates.push(new Date(y, m - 1, d));
+        continue;
+      }
+    }
+
+    // Try ISO format: "2026-06-28"
+    const iso = part.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (iso) {
+      const y = parseInt(iso[1]);
+      const m = parseInt(iso[2]);
+      const d = parseInt(iso[3]);
+      dates.push(new Date(y, m - 1, d));
+      continue;
+    }
+  }
+
+  return dates;
+}
+
+function normalizeCategory(rawCat: string): string {
+  if (!rawCat) return 'alle';
+  
+  const lower = rawCat.toLowerCase().trim();
+  
+  // Check if it matches any CATEGORIES id (exact match, case-insensitive)
+  const matchById = CATEGORIES.find(c => c.id === lower);
+  if (matchById) return matchById.id;
+  
+  // Check if it matches any CATEGORIES label (case-insensitive)
+  const matchByLabel = CATEGORIES.find(c => c.label.toLowerCase() === lower);
+  if (matchByLabel) return matchByLabel.id;
+  
+  // Return original lowercase if no match
+  return lower;
+}
+
+function getEventMinDate(dateStr: string): Date {
+  const dates = parseEventDates(dateStr);
+  return dates.length > 0 ? dates[0] : new Date(9999, 0, 1);
+}
+
 function formatDate(dateStr: string) {
-  const date = new Date(dateStr + "T00:00:00");
-  return date.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "long" });
+  const dates = parseEventDates(dateStr);
+  if (dates.length === 0) return dateStr;
+
+  if (dates.length === 1) {
+    return dates[0].toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
+  }
+
+  // Multiple dates: format as "Fr., 28. August + Sa., 29. August 2026"
+  const formatted = dates.map((d, i) => {
+    const opts = { weekday: "short", day: "numeric", month: "long", year: i === dates.length - 1 ? "numeric" : undefined };
+    return d.toLocaleDateString("de-DE", opts as Intl.DateTimeFormatOptions);
+  }).join(" + ");
+  return formatted;
 }
 
 type Event = {
@@ -126,15 +226,13 @@ function parseCsvToEvents(csv: string): Event[] {
       ? tagsRaw.split(/[;,\n]+/).map(s => s.trim()).filter(Boolean)
       : [];
 
-    const rawCategory = (obj['category'] || obj['kategorie'] || '').toLowerCase();
-
     return {
       id: Number(obj['id'] || obj['nummer'] || idx + 1),
       title: obj['title'] || obj['titel'] || '',
       date: normalizeDate(obj['date'] || obj['datum'] || ''),
       time: normalizeTime(obj['time'] || obj['uhrzeit'] || ''),
       location: obj['location'] || obj['ort'] || '',
-      category: rawCategory || 'alle',
+      category: normalizeCategory(obj['category'] || obj['kategorie'] || ''),
       description: obj['description'] || obj['beschreibung'] || '',
       tags,
       link: obj['link'] || obj['url'] || '',
@@ -235,16 +333,30 @@ export default function App() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = events.filter(e => {
-    const matchCat = activeCategory === "alle" || e.category === activeCategory;
-    const q = search.toLowerCase();
-    const matchSearch =
-      !q ||
-      e.title.toLowerCase().includes(q) ||
-      e.location.toLowerCase().includes(q) ||
-      e.tags.some(t => t.toLowerCase().includes(q));
-    return matchCat && matchSearch;
-  });
+  const filtered = events
+    .filter(e => {
+      const matchCat = activeCategory === "alle" || e.category === activeCategory;
+      const q = search.toLowerCase();
+      const matchSearch =
+        !q ||
+        e.title.toLowerCase().includes(q) ||
+        e.location.toLowerCase().includes(q) ||
+        e.tags.some(t => t.toLowerCase().includes(q));
+      return matchCat && matchSearch;
+    })
+    .filter(e => {
+      // Exclude past events (before today)
+      const eventMinDate = getEventMinDate(e.date);
+      const today = new Date("2026-06-16T00:00:00");
+      today.setHours(0, 0, 0, 0);
+      return eventMinDate >= today;
+    })
+    .sort((a, b) => {
+      // Sort by earliest date in the event (closest first)
+      const dateA = getEventMinDate(a.date);
+      const dateB = getEventMinDate(b.date);
+      return dateA.getTime() - dateB.getTime();
+    });
 
   return (
     <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
