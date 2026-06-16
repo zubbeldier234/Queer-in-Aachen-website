@@ -6,12 +6,15 @@ export default function Vorschlagen() {
     date: "",
     time: "",
     location: "",
+    organizer: "",
+    queerLevel: "queer-friendly",
+    emoji: "",
     description: "",
     tags: "",
     link: "",
   });
 
-  const handleChange = (field: keyof typeof form) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (field: keyof typeof form) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm(prev => ({ ...prev, [field]: event.target.value }));
   };
 
@@ -24,6 +27,9 @@ export default function Vorschlagen() {
       `Datum: ${form.date}`,
       `Uhrzeit: ${form.time}`,
       `Location: ${form.location}`,
+      `Veranstalter: ${form.organizer}`,
+      `Queer-Level: ${form.queerLevel}`,
+      `Emoji: ${form.emoji || "-"}`,
       `Beschreibung: ${form.description || "-"}`,
       `Tags: ${form.tags || "-"}`,
       `Link: ${form.link}`,
@@ -87,6 +93,42 @@ export default function Vorschlagen() {
               required
               className="w-full rounded-2xl border border-white/10 bg-secondary px-4 py-3 text-sm text-foreground focus:border-fuchsia-500/50 focus:outline-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Veranstalter *</label>
+            <input
+              type="text"
+              value={form.organizer}
+              onChange={handleChange("organizer")}
+              required
+              className="w-full rounded-2xl border border-white/10 bg-secondary px-4 py-3 text-sm text-foreground focus:border-fuchsia-500/50 focus:outline-none"
+            />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium mb-2">Queer-Level *</label>
+              <select
+                value={form.queerLevel}
+                onChange={handleChange("queerLevel")}
+                required
+                className="w-full rounded-2xl border border-white/10 bg-secondary px-4 py-3 text-sm text-foreground focus:border-fuchsia-500/50 focus:outline-none"
+              >
+                <option value="queer-friendly">queer-friendly</option>
+                <option value="queer-focused">queer-focused</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Emoji 🎨✊🪩</label>
+              <input
+                type="text"
+                value={form.emoji}
+                onChange={handleChange("emoji")}
+                className="w-full rounded-2xl border border-white/10 bg-secondary px-4 py-3 text-sm text-foreground focus:border-fuchsia-500/50 focus:outline-none"
+                placeholder="z. B. 🎶"
+              />
+            </div>
           </div>
 
           <div>
