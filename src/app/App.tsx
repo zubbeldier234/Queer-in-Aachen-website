@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Calendar, MapPin, Clock, Search, Sparkles, Users, Music, Palette, MessageCircle, ExternalLink, Plus, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Calendar, MapPin, Clock, Search, Sparkles, Users, Music, Palette, MessageCircle, ExternalLink, Plus, X, Menu } from "lucide-react";
 
 /* MARKER-MAKE-KIT-INVOKED */
 
@@ -29,6 +29,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   community: "bg-sky-500/20 text-sky-300 border-sky-500/30",
   demo: "bg-violet-500/20 text-violet-300 border-violet-500/30",
 };
+
+const RAINBOW_DOTS = ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣"];
 
 function parseEventDates(dateStr: string): Date[] {
   if (!dateStr) return [];
@@ -312,6 +314,9 @@ export default function App() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [page, setPage] = useState<"home" | "impressum" | "datenschutz">("home");
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     // Public sheet CSV export (change SHEET_ID/GID if needed)
@@ -332,6 +337,22 @@ export default function App() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuOpen]);
 
   const filtered = events
     .filter(e => {
@@ -361,11 +382,16 @@ export default function App() {
   return (
     <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-xl border-b border-white/5">
-        <div className="px-4 pt-4 pb-3">
-          <div className="flex items-center justify-between mb-4">
+      <header className="sticky top-0 z-30 overflow-visible bg-background/85 backdrop-blur-xl border-b border-white/5">
+        <div className="px-4 pt-4 pb-3 overflow-visible">
+          <div className="flex items-start justify-between gap-4 mb-4 overflow-visible">
             <div>
-              <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setPage("home")}
+                className="flex items-center gap-2.5 mb-1 rounded-2xl text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+                aria-label="Zur Startseite"
+              >
                 <div
                   className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-base"
                   style={{ background: "linear-gradient(135deg, #f97316, #eab308, #22c55e, #3b82f6, #8b5cf6, #ec4899)" }}
@@ -375,12 +401,47 @@ export default function App() {
                 <h1 style={{ fontSize: "1.2rem", fontWeight: 800, background: "linear-gradient(90deg, #f472b6, #c084fc, #60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                   Queer in Aachen
                 </h1>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5 ml-0.5">Events · Community · Sichtbarkeit</p>
+              </button>
+              <p className="text-xs text-muted-foreground ml-0.5">Events · Community · Sichtbarkeit</p>
+            </div>
+            <div className="relative z-[9999]" ref={menuRef}>
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                aria-label="Menü öffnen"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-secondary text-foreground transition hover:border-white/20 hover:bg-white/5"
+              >
+                <Menu size={18} />
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-full mt-3 w-48 rounded-3xl border border-white/10 bg-card p-3 shadow-lg shadow-black/20 z-[9999]">
+                  <button
+                    onClick={() => {
+                      setPage("impressum");
+                      setMenuOpen(false);
+                    }}
+                    className="w-full text-left rounded-2xl px-3 py-2 text-sm text-foreground hover:bg-secondary"
+                  >
+                    Impressum
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPage("datenschutz");
+                      setMenuOpen(false);
+                    }}
+                    className="w-full text-left rounded-2xl px-3 py-2 text-sm text-foreground hover:bg-secondary"
+                  >
+                    Datenschutz
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Search */}
+        </div>
+      </header>
+
+      {page === "home" && (
+        <div className="px-4 pb-3 space-y-3">
           <div className="relative">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <input
@@ -396,82 +457,98 @@ export default function App() {
               </button>
             )}
           </div>
-        </div>
 
-        {/* Category pills */}
-        <div className="px-4 pb-3 overflow-x-auto" style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}>
-          <div className="flex gap-2 w-max">
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`px-3.5 py-1.5 rounded-full text-sm whitespace-nowrap transition-all font-semibold border ${
-                  activeCategory === cat.id
-                    ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-md`
-                    : "bg-secondary border-white/10 text-muted-foreground hover:border-white/20 hover:text-foreground"
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
+          <div className="overflow-x-auto" style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}>
+            <div className="flex gap-2">
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={`px-3.5 py-1.5 rounded-full text-sm whitespace-nowrap transition-all font-semibold border ${
+                    activeCategory === cat.id
+                      ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-md`
+                      : "bg-secondary border-white/10 text-muted-foreground hover:border-white/20 hover:text-foreground"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </header>
+      )}
 
-      {/* Hero */}
-      <div
-        className="px-5 py-7 text-center relative overflow-hidden"
-        style={{ background: "linear-gradient(180deg, #1a0d2e 0%, #0f0b1a 100%)" }}
-      >
+      {page === "home" ? (
         <div
-          className="absolute inset-0 opacity-30 pointer-events-none"
-          style={{ background: "radial-gradient(ellipse at 25% 60%, #c026d3 0%, transparent 55%), radial-gradient(ellipse at 75% 40%, #7c3aed 0%, transparent 55%)" }}
-        />
-        <div className="relative z-10">
-          <div className="flex justify-center gap-1 mb-2">
-            {"🔴🟠🟡🟢🔵🟣".split("").filter((_, i) => i % 2 === 0).map((c, i) => (
-              <span key={i} className="text-lg">{c}</span>
-            ))}
+          className="px-5 py-7 text-center relative overflow-hidden"
+          style={{ background: "linear-gradient(180deg, #1a0d2e 0%, #0f0b1a 100%)" }}
+        >
+          <div
+            className="absolute inset-0 opacity-30 pointer-events-none"
+            style={{ background: "radial-gradient(ellipse at 25% 60%, #c026d3 0%, transparent 55%), radial-gradient(ellipse at 75% 40%, #7c3aed 0%, transparent 55%)" }}
+          />
+          <div className="relative z-10">
+            <div className="flex justify-center gap-1 mb-2">
+              {RAINBOW_DOTS.map((dot, i) => (
+                <span key={i} className="text-lg">{dot}</span>
+              ))}
+            </div>
+            <p className="text-muted-foreground text-sm max-w-xs mx-auto leading-relaxed">
+              Dein Guide für queere Veranstaltungen, Community-Treffpunkte und LGBTQ+ Leben in Aachen.
+            </p>
           </div>
-          <p className="text-muted-foreground text-sm max-w-xs mx-auto leading-relaxed">
-            Dein Guide für queere Veranstaltungen, Community-Treffpunkte und LGBTQ+ Leben in Aachen.
-          </p>
         </div>
-      </div>
+      ) : null}
 
-      {/* Result count */}
-      <div className="px-4 py-3 flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          <span className="text-foreground font-semibold">{filtered.length}</span>{" "}
-          {filtered.length === 1 ? "Event" : "Events"} gefunden
-        </p>
-        {(activeCategory !== "alle" || search) && (
-          <button
-            onClick={() => { setActiveCategory("alle"); setSearch(""); }}
-            className="text-xs text-fuchsia-400 hover:text-fuchsia-300 flex items-center gap-1 transition-colors"
-          >
-            <X size={11} /> Zurücksetzen
-          </button>
-        )}
-      </div>
-
-      {/* Events */}
-      <main className="px-4 pb-32 space-y-4">
-        {loading ? (
-          <div className="text-center py-16 text-muted-foreground">Lädt…</div>
-        ) : error ? (
-          <div className="text-center py-16 text-red-400">Fehler beim Laden der Events</div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <div className="text-5xl mb-4">🔍</div>
-            <p className="text-foreground font-bold mb-1" style={{ fontSize: "1rem" }}>Keine Events gefunden</p>
-            <p className="text-sm">Versuche einen anderen Begriff oder eine andere Kategorie.</p>
+      {page !== "home" ? (
+        <main className="px-4 pb-32">
+          <div className="space-y-4">
+            <h2 className="text-2xl font-semibold">
+              {page === "impressum" ? "Impressum" : "Datenschutz"}
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {page === "impressum"
+                ? "Hier stehen die Impressumsinhalte. Bitte ergänze die rechtlichen Angaben."
+                : "Hier stehen die Datenschutzinhalte. Bitte ergänze Informationen zur Datenverarbeitung."}
+            </p>
           </div>
-        ) : (
-          filtered.map(event => <EventCard key={event.id} event={event} />)
-        )}
+        </main>
+      ) : (
+        <>
+          {/* Result count */}
+          <div className="px-4 py-3 flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              <span className="text-foreground font-semibold">{filtered.length}</span>{" "}
+              {filtered.length === 1 ? "Event" : "Events"} gefunden
+            </p>
+            {(activeCategory !== "alle" || search) && (
+              <button
+                onClick={() => { setActiveCategory("alle"); setSearch(""); }}
+                className="text-xs text-fuchsia-400 hover:text-fuchsia-300 flex items-center gap-1 transition-colors"
+              >
+                <X size={11} /> Zurücksetzen
+              </button>
+            )}
+          </div>
 
-      </main>
+          {/* Events */}
+          <main className="px-4 pb-32 space-y-4">
+            {loading ? (
+              <div className="text-center py-16 text-muted-foreground">Lädt…</div>
+            ) : error ? (
+              <div className="text-center py-16 text-red-400">Fehler beim Laden der Events</div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">
+                <div className="text-5xl mb-4">🔍</div>
+                <p className="text-foreground font-bold mb-1" style={{ fontSize: "1rem" }}>Keine Events gefunden</p>
+                <p className="text-sm">Versuche einen anderen Begriff oder eine andere Kategorie.</p>
+              </div>
+            ) : (
+              filtered.map(event => <EventCard key={event.id} event={event} />)
+            )}
+          </main>
+        </>
+      )}
 
       {/* Bottom bar – Event vorschlagen */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 bg-card/90 backdrop-blur-xl border-t border-white/10">
