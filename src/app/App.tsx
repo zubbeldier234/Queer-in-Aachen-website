@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Calendar, MapPin, Clock, Search, Sparkles, Users, Music, Palette, MessageCircle, ExternalLink, Plus, X } from "lucide-react";
 
 /* MARKER-MAKE-KIT-INVOKED */
@@ -12,104 +12,7 @@ const CATEGORIES = [
   { id: "demo", label: "Demo & Politik", color: "from-violet-500 to-purple-600" },
 ];
 
-const EVENTS = [
-  {
-    id: 1,
-    title: "Rainbow Friday – Monatliche Queer Party",
-    date: "2026-06-20",
-    time: "22:00",
-    location: "Club Voltaire, Aachen",
-    category: "party",
-    description: "Die größte monatliche queere Party in Aachen. DJ-Sets, Drag-Shows und eine offene, inklusive Atmosphäre für alle.",
-    tags: ["LGBTQ+", "Drag", "Tanzen"],
-    link: "https://example.com/rainbow-friday",
-    emoji: "🏳️‍🌈",
-  },
-  {
-    id: 2,
-    title: "Queer Stammtisch – Offen für alle",
-    date: "2026-06-22",
-    time: "19:00",
-    location: "Café KAZ, Pontstraße 74",
-    category: "community",
-    description: "Ungezwungenes Treffen zum Kennenlernen, Austauschen und Vernetzen. Alle queeren Menschen und Allies sind herzlich willkommen.",
-    tags: ["Stammtisch", "Networking"],
-    link: "https://schwules-zentrum-aachen.de",
-    emoji: "💜",
-  },
-  {
-    id: 3,
-    title: "Queer Filmabend – 'Portrait of a Lady on Fire'",
-    date: "2026-06-25",
-    time: "20:00",
-    location: "Filmhaus Aachen, Gasborn 7",
-    category: "kultur",
-    description: "Screening des gefeierten Films mit anschließender Diskussion. Eintritt frei – Spenden willkommen.",
-    tags: ["Film", "Kunst", "Diskussion"],
-    link: "https://filmhaus-aachen.de",
-    emoji: "🎬",
-  },
-  {
-    id: 4,
-    title: "LGBTQ+ Rechtsberatung",
-    date: "2026-06-26",
-    time: "14:00",
-    location: "Schwules Zentrum Aachen, Promenadenstraße",
-    category: "beratung",
-    description: "Kostenlose Rechtsberatung zu Themen wie Namensänderung, Antidiskriminierung und Partnerschaftsrecht. Anmeldung erforderlich.",
-    tags: ["Recht", "Beratung", "Kostenlos"],
-    link: "https://schwules-zentrum-aachen.de/beratung",
-    emoji: "⚖️",
-  },
-  {
-    id: 5,
-    title: "Aachen Pride 2026 – Kundgebung & Demo",
-    date: "2026-07-04",
-    time: "13:00",
-    location: "Katschhof, Aachen Innenstadt",
-    category: "demo",
-    description: "Gemeinsam auf die Straße für Sichtbarkeit, Gleichberechtigung und Solidarität. Der jährliche Höhepunkt der Aachener Pride-Saison.",
-    tags: ["Pride", "Demo", "Solidarität"],
-    link: "https://csd-aachen.de",
-    emoji: "✊",
-  },
-  {
-    id: 6,
-    title: "Queer Yoga – Körper & Seele",
-    date: "2026-07-05",
-    time: "10:00",
-    location: "Kulturzentrum Südbad, Aachen",
-    category: "community",
-    description: "Yoga-Kurs in einem sicheren, queeren Raum. Für alle Erfahrungslevel. Bitte eigene Matte mitbringen.",
-    tags: ["Sport", "Wellness", "Inklusion"],
-    link: "",
-    emoji: "🧘",
-  },
-  {
-    id: 7,
-    title: "Drag Brunch – Glitter & Granola",
-    date: "2026-07-12",
-    time: "11:00",
-    location: "Restaurant Goldener Schwan, Münsterplatz",
-    category: "party",
-    description: "Sonntagsbrunch mit Drag-Performances, Cocktails und queerer Energie. Tische bitte im Voraus reservieren.",
-    tags: ["Drag", "Brunch", "Feier"],
-    link: "https://instagram.com/dragbrunchaachen",
-    emoji: "👸",
-  },
-  {
-    id: 8,
-    title: "Queere Kunstausstellung – 'Sichtbar'",
-    date: "2026-07-18",
-    time: "18:00",
-    location: "Galerie am Dom, Aachen",
-    category: "kultur",
-    description: "Vernissage einer Gruppenausstellung mit queeren Künstler*innen aus der Region. Finissage am 10. August.",
-    tags: ["Kunst", "Ausstellung", "Vernissage"],
-    link: "https://galerie-am-dom-aachen.de",
-    emoji: "🎨",
-  },
-];
+// EVENTS are now loaded from a Google Sheet (CSV export). See `useEffect` in `App`.
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   party: <Music size={13} />,
@@ -132,7 +35,113 @@ function formatDate(dateStr: string) {
   return date.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "long" });
 }
 
-type Event = typeof EVENTS[0];
+type Event = {
+  id: number;
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  category: string;
+  description: string;
+  tags: string[];
+  link: string;
+  emoji: string;
+};
+
+function parseCsvToEvents(csv: string): Event[] {
+  // Robust CSV parser that supports quoted fields with commas/newlines
+  const rows: string[][] = [];
+  let cur = "";
+  let row: string[] = [];
+  let inQuotes = false;
+  for (let i = 0; i < csv.length; i++) {
+    const ch = csv[i];
+    const next = csv[i + 1];
+    if (ch === '"') {
+      if (inQuotes && next === '"') {
+        cur += '"';
+        i++;
+        continue;
+      }
+      inQuotes = !inQuotes;
+      continue;
+    }
+
+    if (ch === ',' && !inQuotes) {
+      row.push(cur);
+      cur = '';
+      continue;
+    }
+
+    if ((ch === '\n' || ch === '\r') && !inQuotes) {
+      // handle CRLF
+      if (ch === '\r' && next === '\n') i++;
+      row.push(cur);
+      rows.push(row);
+      row = [];
+      cur = '';
+      continue;
+    }
+
+    cur += ch;
+  }
+  // push remaining
+  if (cur !== '' || row.length > 0) {
+    row.push(cur);
+    rows.push(row);
+  }
+
+  if (rows.length === 0) return [];
+
+  const headers = rows.shift()!.map(h => h.trim().toLowerCase());
+
+  function normalizeDate(s: string) {
+    if (!s) return '';
+    s = s.trim();
+    const dmy = s.match(/^(\d{1,2})[\.\-/](\d{1,2})[\.\-/](\d{4})$/);
+    if (dmy) {
+      const d = dmy[1].padStart(2, '0');
+      const m = dmy[2].padStart(2, '0');
+      const y = dmy[3];
+      return `${y}-${m}-${d}`;
+    }
+    // already yyyy-mm-dd
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    return s;
+  }
+
+  function normalizeTime(s: string) {
+    if (!s) return '';
+    return s.trim().replace('.', ':');
+  }
+
+  return rows.map((r, idx) => {
+    const obj: Record<string, string> = {};
+    headers.forEach((h, i) => {
+      obj[h] = (r[i] || '').trim();
+    });
+
+    const tagsRaw = obj['tags'] || obj['tag'] || obj['stichworte'] || '';
+    const tags = tagsRaw
+      ? tagsRaw.split(/[;,\n]+/).map(s => s.trim()).filter(Boolean)
+      : [];
+
+    const rawCategory = (obj['category'] || obj['kategorie'] || '').toLowerCase();
+
+    return {
+      id: Number(obj['id'] || obj['nummer'] || idx + 1),
+      title: obj['title'] || obj['titel'] || '',
+      date: normalizeDate(obj['date'] || obj['datum'] || ''),
+      time: normalizeTime(obj['time'] || obj['uhrzeit'] || ''),
+      location: obj['location'] || obj['ort'] || '',
+      category: rawCategory || 'alle',
+      description: obj['description'] || obj['beschreibung'] || '',
+      tags,
+      link: obj['link'] || obj['url'] || '',
+      emoji: obj['emoji'] || '',
+    } as Event;
+  });
+}
 
 function EventCard({ event }: { event: Event }) {
   const catColor = CATEGORY_COLORS[event.category] ?? "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30";
@@ -202,8 +211,31 @@ function EventCard({ event }: { event: Event }) {
 export default function App() {
   const [activeCategory, setActiveCategory] = useState("alle");
   const [search, setSearch] = useState("");
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const filtered = EVENTS.filter(e => {
+  useEffect(() => {
+    // Public sheet CSV export (change SHEET_ID/GID if needed)
+    const SHEET_ID = "15Jw7Nn1Bo3raRXQz5vm2iuPdh-FgFBoMtUveJX6Q2NA";
+    const GID = "0";
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+
+    setLoading(true);
+    fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+        return res.text();
+      })
+      .then(csv => setEvents(parseCsvToEvents(csv)))
+      .catch(err => {
+        console.error(err);
+        setError(String(err));
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = events.filter(e => {
     const matchCat = activeCategory === "alle" || e.category === activeCategory;
     const q = search.toLowerCase();
     const matchSearch =
@@ -313,7 +345,11 @@ export default function App() {
 
       {/* Events */}
       <main className="px-4 pb-32 space-y-4">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-16 text-muted-foreground">Lädt…</div>
+        ) : error ? (
+          <div className="text-center py-16 text-red-400">Fehler beim Laden der Events</div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <div className="text-5xl mb-4">🔍</div>
             <p className="text-foreground font-bold mb-1" style={{ fontSize: "1rem" }}>Keine Events gefunden</p>
