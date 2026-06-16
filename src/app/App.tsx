@@ -148,6 +148,7 @@ type Event = {
   location: string;
   category: string;
   description: string;
+  organizer?: string;
   tags: string[];
   link: string;
   emoji: string;
@@ -253,6 +254,7 @@ function parseCsvToEvents(csv: string): Event[] {
       location: obj['location'] || obj['ort'] || '',
       category: normalizeCategory(obj['category'] || obj['kategorie'] || ''),
       description: obj['description'] || obj['beschreibung'] || '',
+      organizer: obj['organizer'] || obj['veranstalter'] || '',
       tags,
       link: obj['link'] || obj['url'] || '',
       emoji: obj['emoji'] || '',
@@ -282,8 +284,11 @@ function EventCard({ event }: { event: Event }) {
           <span className="text-3xl shrink-0 mt-0.5">{event.emoji}</span>
         </div>
 
-        <p className="text-sm text-muted-foreground leading-relaxed mb-4">{event.description}</p>
+        <p className={`text-sm text-muted-foreground leading-relaxed ${event.organizer ? 'mb-1' : 'mb-4'}`}>{event.description}</p>
 
+        {event.organizer ? (
+          <p className="text-sm text-muted-foreground leading-relaxed mb-4">Veranstalter: {event.organizer}</p>
+        ) : null}
         <div className="space-y-1.5 mb-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar size={13} className="shrink-0 text-fuchsia-400" />
