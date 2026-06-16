@@ -226,10 +226,24 @@ function parseCsvToEvents(csv: string): Event[] {
       obj[h] = (r[i] || '').trim();
     });
 
+    const queerRaw = obj['queerlevel'] || obj['queer-level'] || obj['queer level'] || '';
     const tagsRaw = obj['tags'] || obj['tag'] || obj['stichworte'] || '';
     const tags = tagsRaw
       ? tagsRaw.split(/[;,\n]+/).map(s => s.trim()).filter(Boolean)
       : [];
+
+    // Ensure queer level (if provided) appears as the first tag and is not duplicated
+    if (queerRaw && queerRaw.trim()) {
+      const q = queerRaw.trim();
+      const lower = tags.map(t => t.toLowerCase());
+      const qi = lower.indexOf(q.toLowerCase());
+      if (qi === -1) {
+        tags.unshift(q);
+      } else if (qi > 0) {
+        tags.splice(qi, 1);
+        tags.unshift(q);
+      }
+    }
 
     return {
       id: Number(obj['id'] || obj['nummer'] || idx + 1),
@@ -286,9 +300,9 @@ function EventCard({ event }: { event: Event }) {
         </div>
 
         <div className="flex flex-wrap gap-1.5 mb-4">
-          {event.tags.map(tag => (
-            <span key={tag} className="px-2 py-0.5 rounded-full text-xs bg-secondary text-muted-foreground border border-white/5">
-              #{tag}
+          {event.tags.map((tag, i) => (
+            <span key={tag + i} className="px-2 py-0.5 rounded-full text-xs bg-secondary text-muted-foreground border border-white/5">
+              {i === 0 ? tag : `#${tag}`}
             </span>
           ))}
         </div>
