@@ -35,6 +35,9 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const RAINBOW_DOTS = ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣"];
 
+// Feature flags
+const SHOW_FOOTER = false;
+
 function parseEventDates(dateStr: string): Date[] {
   if (!dateStr) return [];
 
@@ -300,7 +303,7 @@ function EventCard({ event }: { event: Event }) {
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <MapPin size={13} className="shrink-0 text-fuchsia-400" />
-            <span className="truncate">{event.location}</span>
+            <span className="whitespace-normal">{event.location}</span>
           </div>
         </div>
 
@@ -409,7 +412,7 @@ export default function App() {
     .filter(e => {
       // Exclude past events (before today)
       const eventMinDate = getEventMinDate(e.date);
-      const today = new Date("2026-06-16T00:00:00");
+      const today = new Date();
       today.setHours(0, 0, 0, 0);
       return eventMinDate >= today;
     })
@@ -499,8 +502,8 @@ export default function App() {
             )}
           </div>
 
-          <div className="overflow-x-auto" style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}>
-            <div className="flex gap-2">
+          <div className="overflow-visible">
+            <div className="flex flex-wrap gap-2 sm:flex-nowrap sm:overflow-x-auto" style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}>
               {CATEGORIES.map(cat => (
                 <button
                   key={cat.id}
@@ -581,7 +584,7 @@ export default function App() {
       )}
 
       {/* Bottom bar – Event vorschlagen */}
-      {route !== "vorschlagen" && (
+      {SHOW_FOOTER && route !== "vorschlagen" && (
         <nav className="fixed bottom-0 left-0 right-0 z-30 bg-card/90 backdrop-blur-xl border-t border-white/10">
           <div className="px-4 py-3">
             <button
