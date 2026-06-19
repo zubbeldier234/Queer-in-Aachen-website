@@ -293,7 +293,7 @@ function EventCard({ event }: { event: Event }) {
         <p className={`text-sm text-muted-foreground leading-relaxed ${event.organizer ? 'mb-1' : 'mb-4'}`}>{event.description}</p>
 
         {event.organizer ? (
-          <p className="text-sm text-muted-foreground leading-relaxed mb-4">Veranstalter: {event.organizer}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed mb-4">Veranstalterin: {event.organizer}</p>
         ) : null}
         <div className="space-y-1.5 mb-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
