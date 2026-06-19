@@ -230,7 +230,10 @@ function parseCsvToEvents(csv: string): Event[] {
       obj[h] = (r[i] || '').trim();
     });
 
-    const queerRaw = obj['queerlevel'] || obj['queer-level'] || obj['queer level'] || '';
+    let queerRaw = obj['queerlevel'] || obj['queer-level'] || obj['queer level'] || '';
+    // Strip "level=" prefix if present
+    queerRaw = queerRaw.replace(/^level=/i, '').trim();
+    
     const tagsRaw = obj['tags'] || obj['tag'] || obj['stichworte'] || '';
     const tags = tagsRaw
       ? tagsRaw.split(/[;,\n]+/).map(s => s.trim()).filter(Boolean)
@@ -255,7 +258,7 @@ function parseCsvToEvents(csv: string): Event[] {
       date: normalizeDate(obj['date'] || obj['datum'] || ''),
       time: normalizeTime(obj['time'] || obj['uhrzeit'] || ''),
       location: obj['location'] || obj['ort'] || '',
-      category: normalizeCategory(obj['category'] || obj['kategorie'] || ''),
+      category: normalizeCategory((obj['category'] || obj['kategorie'] || '').replace(/^category=/i, '')),
       description: obj['description'] || obj['beschreibung'] || '',
       organizer: obj['organizer'] || obj['veranstalter'] || '',
       tags,
