@@ -313,7 +313,7 @@ function EventCard({ event }: { event: Event }) {
         <div className="flex flex-wrap gap-1.5 mb-4">
           {event.tags.map((tag, i) => (
             <span key={tag + i} className="px-2 py-0.5 rounded-full text-xs bg-secondary text-muted-foreground border border-white/5">
-              {i === 0 ? tag : `#${tag}`}
+              {tag}
             </span>
           ))}
         </div>
