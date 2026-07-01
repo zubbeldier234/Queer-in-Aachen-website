@@ -38,67 +38,74 @@ const RAINBOW_DOTS = ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣"];
 // Feature flags
 const SHOW_FOOTER = false;
 
-function parseEventDates(dateStr: string): Date[] {
-  if (!dateStr) return [];
+function parseDateValue(input: string): Date | null {
+  if (!input) return null;
 
-  // Try to handle ranges (e.g., "28.-29.6.2026" or "28.6.-29.6.2026")
-  const rangeMatch = dateStr.match(/(\d{1,2})\.(\d{1,2})?\.?-(\d{1,2})\.(\d{1,2})\.(\d{4})/);
-  if (rangeMatch) {
-    const startDay = parseInt(rangeMatch[1]);
-    const startMonth = rangeMatch[2] ? parseInt(rangeMatch[2]) : parseInt(rangeMatch[4]);
-    const startYear = parseInt(rangeMatch[5]);
-    const endDay = parseInt(rangeMatch[3]);
-    const endMonth = parseInt(rangeMatch[4]);
-    const endYear = parseInt(rangeMatch[5]);
+  const trimmed = input.trim();
 
-    const start = new Date(startYear, startMonth - 1, startDay);
-    const end = new Date(endYear, endMonth - 1, endDay);
-    const dates: Date[] = [];
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      dates.push(new Date(d));
-    }
-    return dates;
+  // German format: 28.6.2026 or 28.06.2026
+  const dmy = trimmed.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (dmy) {
+    const d = parseInt(dmy[1], 10);
+    const m = parseInt(dmy[2], 10);
+    const y = parseInt(dmy[3], 10);
+    return new Date(y, m - 1, d);
   }
 
-  // Try to handle multiple dates separated by "+" or ","
-  const parts = dateStr.split(/[,+]+/).map(s => s.trim()).filter(Boolean);
+  // ISO format: 2026-06-28
+  const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) {
+    const y = parseInt(iso[1], 10);
+    const m = parseInt(iso[2], 10);
+    const d = parseInt(iso[3], 10);
+    return new Date(y, m - 1, d);
+  }
+
+  return null;
+}
+
+function parseDateExpression(dateStr: string): Array<{ start: Date; end?: Date }> {
+  if (!dateStr) return [];
+
+  const trimmed = dateStr.trim();
+
+  // Handle explicit ranges like 06.07.2026 - 10.07.2026 or 06.07.2026-10.07.2026
+  const rangeMatch = trimmed.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})\s*(?:-|–|—)\s*(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (rangeMatch) {
+    const start = parseDateValue(`${rangeMatch[1]}.${rangeMatch[2]}.${rangeMatch[3]}`);
+    const end = parseDateValue(`${rangeMatch[4]}.${rangeMatch[5]}.${rangeMatch[6]}`);
+    if (start && end) {
+      return [{ start, end }];
+    }
+  }
+
+  // Handle lists separated by + or , or ;
+  const parts = trimmed.split(/\s*\+\s*|\s*,\s*|\s*;\s*/).map(s => s.trim()).filter(Boolean);
+  const parsed: Array<{ start: Date; end?: Date }> = [];
+
+  for (const part of parts) {
+    const date = parseDateValue(part);
+    if (date) {
+      parsed.push({ start: date });
+    }
+  }
+
+  return parsed;
+}
+
+function parseEventDates(dateStr: string): Date[] {
+  const expressions = parseDateExpression(dateStr);
   const dates: Date[] = [];
 
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i];
-
-    // Try German format: "28.6.2026" or "28.06.2026"
-    let dmy = part.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
-    if (dmy) {
-      const d = parseInt(dmy[1]);
-      const m = parseInt(dmy[2]);
-      const y = parseInt(dmy[3]);
-      dates.push(new Date(y, m - 1, d));
-      continue;
-    }
-
-    // Try abbreviated format: "28." (day only) — use month/year from next part
-    const abbrev = part.match(/^(\d{1,2})\.?$/);
-    if (abbrev && i + 1 < parts.length) {
-      const nextPart = parts[i + 1];
-      const nextDmy = nextPart.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
-      if (nextDmy) {
-        const d = parseInt(abbrev[1]);
-        const m = parseInt(nextDmy[2]);
-        const y = parseInt(nextDmy[3]);
-        dates.push(new Date(y, m - 1, d));
-        continue;
+  for (const expr of expressions) {
+    if (expr.end) {
+      const start = new Date(expr.start);
+      const end = new Date(expr.end);
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        dates.push(new Date(d));
       }
-    }
-
-    // Try ISO format: "2026-06-28"
-    const iso = part.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (iso) {
-      const y = parseInt(iso[1]);
-      const m = parseInt(iso[2]);
-      const d = parseInt(iso[3]);
-      dates.push(new Date(y, m - 1, d));
-      continue;
+    } else {
+      dates.push(new Date(expr.start));
     }
   }
 
@@ -128,18 +135,31 @@ function getEventMinDate(dateStr: string): Date {
 }
 
 function formatDate(dateStr: string) {
-  const dates = parseEventDates(dateStr);
-  if (dates.length === 0) return dateStr;
+  const expressions = parseDateExpression(dateStr);
+  if (expressions.length === 0) return dateStr;
 
-  if (dates.length === 1) {
-    return dates[0].toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
+  const formatSingle = (d: Date, includeYear: boolean) =>
+    d.toLocaleDateString("de-DE", {
+      weekday: "short",
+      day: "numeric",
+      month: "long",
+      year: includeYear ? "numeric" : undefined,
+    });
+
+  if (expressions.length === 1 && expressions[0].end) {
+    return `${formatSingle(expressions[0].start, false)} - ${formatSingle(expressions[0].end, true)}`;
   }
 
-  // Multiple dates: format as "Fr., 28. August + Sa., 29. August 2026"
-  const formatted = dates.map((d, i) => {
-    const opts = { weekday: "short", day: "numeric", month: "long", year: i === dates.length - 1 ? "numeric" : undefined };
-    return d.toLocaleDateString("de-DE", opts as Intl.DateTimeFormatOptions);
+  if (expressions.length === 1) {
+    return formatSingle(expressions[0].start, true);
+  }
+
+  const formatted = expressions.map((expr, i) => {
+    const d = expr.start;
+    const includeYear = i === expressions.length - 1;
+    return formatSingle(d, includeYear);
   }).join(" + ");
+
   return formatted;
 }
 
