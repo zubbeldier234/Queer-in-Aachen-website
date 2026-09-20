@@ -465,7 +465,7 @@ export default function App() {
       {/* Header */}
       <header className="sticky top-0 z-30 overflow-visible bg-[#F5F0FF]/90 backdrop-blur-xl">
         <div className="px-4 pt-4 pb-3 overflow-visible">
-          <div className="flex items-start justify-between gap-4 mb-4 overflow-visible">
+          <div className="flex items-start justify-between gap-4 overflow-visible">
             <div>
               <div className="flex items-center gap-3">
                 <button
