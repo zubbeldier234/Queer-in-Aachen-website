@@ -335,7 +335,7 @@ function EventCard({ event }: { event: Event }) {
             <span>{event.time} Uhr</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin size={13} className="shrink-0 text-fuchsia-400" />
+            <MapPin size={13} className="shrink-0 self-start mt-0.5 text-fuchsia-400" />
             <span className="whitespace-normal">{event.location}</span>
           </div>
         </div>
