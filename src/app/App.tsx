@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Calendar, MapPin, Clock, Search, Sparkles, Users, Music, Palette, MessageCircle, ExternalLink, Plus, X, Menu } from "lucide-react";
+import { Calendar, MapPin, Clock, Search, Sparkles, Users, Music, MessageCircle, ExternalLink, Plus, X, Menu, Drama, SportShoe, Paintbrush } from "lucide-react";
+import logo from "../assets/queer in aachen logo.svg";
+import eventCardOctagon from "../assets/event-card-octagon.svg";
 import Impressum from "./pages/Impressum";
 import Datenschutz from "./pages/Datenschutz";
 import Vorschlagen from "./pages/Vorschlagen";
@@ -10,6 +12,8 @@ const CATEGORIES = [
   { id: "alle", label: "Alle Events", color: "from-fuchsia-500 to-violet-600" },
   { id: "party", label: "Party", color: "from-pink-500 to-rose-600" },
   { id: "kultur", label: "Kultur", color: "from-amber-500 to-orange-600" },
+  { id: "sport", label: "Sport", color: "from-emerald-500 to-teal-600" },
+  { id: "kreativitaet", label: "Kreativität", color: "from-orange-500 to-amber-600" },
   { id: "beratung", label: "Beratung", color: "from-emerald-500 to-teal-600" },
   { id: "community", label: "Community", color: "from-sky-500 to-blue-600" },
   { id: "demo", label: "Demo & Politik", color: "from-violet-500 to-purple-600" },
@@ -19,21 +23,23 @@ const CATEGORIES = [
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   party: <Music size={13} />,
-  kultur: <Palette size={13} />,
+  kultur: <Drama size={13} />,
+  sport: <SportShoe size={13} />,
+  kreativitaet: <Paintbrush size={13} />,
   beratung: <MessageCircle size={13} />,
   community: <Users size={13} />,
   demo: <Sparkles size={13} />,
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  party: "bg-pink-500/20 text-pink-300 border-pink-500/30",
-  kultur: "bg-amber-500/20 text-amber-300 border-amber-500/30",
-  beratung: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  community: "bg-sky-500/20 text-sky-300 border-sky-500/30",
-  demo: "bg-violet-500/20 text-violet-300 border-violet-500/30",
+  party: "bg-pink-100/80 text-pink-800 border-pink-300",
+  kultur: "bg-amber-100/80 text-amber-900 border-amber-300",
+  sport: "bg-emerald-100/80 text-emerald-800 border-emerald-300",
+  kreativitaet: "bg-orange-100/80 text-orange-900 border-orange-300",
+  beratung: "bg-teal-100/80 text-teal-800 border-teal-300",
+  community: "bg-sky-100/80 text-sky-800 border-sky-300",
+  demo: "bg-violet-100/80 text-violet-800 border-violet-300",
 };
-
-const RAINBOW_DOTS = ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣"];
 
 // Feature flags
 const SHOW_FOOTER = false;
@@ -293,21 +299,25 @@ function EventCard({ event }: { event: Event }) {
   const catLabel = CATEGORIES.find(c => c.id === event.category)?.label ?? event.category;
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-white/10 bg-card hover:border-white/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-fuchsia-900/20">
+    <article className="relative overflow-visible rounded-[32px] border border-white/10 bg-card hover:border-white/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-fuchsia-900/20">
+      <img
+        src={eventCardOctagon}
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-[11px] -right-[11px] z-20 h-[59px] w-[59px]"
+      />
       <div className="p-5">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap gap-2 mb-2.5">
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border ${catColor}`}>
-                {CATEGORY_ICONS[event.category]}
-                {catLabel}
-              </span>
+            <div className="flex items-start gap-2">
+              <div>
+                <div className="text-3xl leading-none mb-2">{event.emoji}</div>
+                <h3 className="leading-snug text-card-foreground" style={{ fontSize: "1.875rem", fontWeight: 700 }}>
+                {event.title}
+                </h3>
+              </div>
             </div>
-            <h3 className="leading-snug text-card-foreground" style={{ fontSize: "0.975rem", fontWeight: 700 }}>
-              {event.title}
-            </h3>
           </div>
-          <span className="text-3xl shrink-0 mt-0.5">{event.emoji}</span>
         </div>
 
         <p className={`text-sm text-muted-foreground leading-relaxed ${event.organizer ? 'mb-1' : 'mb-4'}`}>{event.description}</p>
@@ -331,15 +341,19 @@ function EventCard({ event }: { event: Event }) {
         </div>
 
         <div className="flex flex-wrap gap-1.5 mb-4">
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs leading-none border ${catColor}`}>
+            {CATEGORY_ICONS[event.category]}
+            {catLabel}
+          </span>
           {event.tags.map((tag, i) => (
-            <span key={tag + i} className="px-2 py-0.5 rounded-full text-xs bg-secondary text-muted-foreground border border-white/5">
+            <span key={tag + i} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs leading-none bg-[#F5F0FF] text-[#261B36] border border-[#A89CC8]">
               {tag}
             </span>
           ))}
         </div>
 
         {event.link && (
-          <div className="pt-3 border-t border-white/5">
+          <div className="pt-3 border-t border-[#F5F0FF]">
             <a
               href={event.link}
               target="_blank"
@@ -449,38 +463,32 @@ export default function App() {
   return (
     <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
       {/* Header */}
-      <header className="sticky top-0 z-30 overflow-visible bg-background/85 backdrop-blur-xl border-b border-white/5">
+      <header className="sticky top-0 z-30 overflow-visible bg-[#F5F0FF]/90 backdrop-blur-xl">
         <div className="px-4 pt-4 pb-3 overflow-visible">
           <div className="flex items-start justify-between gap-4 mb-4 overflow-visible">
             <div>
-              <button
-                type="button"
-                onClick={() => navigate("home")}
-                className="flex items-center gap-2.5 mb-1 rounded-2xl text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
-                aria-label="Zur Startseite"
-              >
-                <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-base"
-                  style={{ background: "linear-gradient(135deg, #f97316, #eab308, #22c55e, #3b82f6, #8b5cf6, #ec4899)" }}
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate("home")}
+                  className="rounded-2xl text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-fuchsia-500/60"
+                  aria-label="Zur Startseite"
                 >
-                  🏳️‍🌈
-                </div>
-                <h1 style={{ fontSize: "1.2rem", fontWeight: 800, background: "linear-gradient(90deg, #f472b6, #c084fc, #60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                  Queer in Aachen
-                </h1>
-              </button>
-              <p className="text-xs text-muted-foreground ml-0.5">Events · Community · Sichtbarkeit</p>
+                  <img src={logo} alt="Queer in Aachen" className="h-10 w-auto max-w-[min(48vw,280px)] object-contain" />
+                </button>
+                <p className="max-w-[180px] text-xs leading-relaxed text-muted-foreground">Dein Guide für queere Veranstaltungen in Aachen</p>
+              </div>
             </div>
             <div className="relative z-[9999]" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 aria-label="Menü öffnen"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-secondary text-foreground transition hover:border-white/20 hover:bg-white/5"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#A89CC8] bg-[#F3EBFF] text-[#261B36] transition hover:border-[#8B5CF6] hover:bg-[#EAE0FF]"
               >
                 <Menu size={18} />
               </button>
               {menuOpen && (
-                <div className="absolute right-0 top-full mt-3 w-48 rounded-3xl border border-white/10 bg-card p-3 shadow-lg shadow-black/20 z-[9999]">
+                <div className="absolute right-0 top-full mt-3 w-48 rounded-3xl border border-[#A89CC8]/60 bg-white p-3 shadow-lg shadow-[#A89CC8]/20 z-[9999]">
                   <button
                     onClick={() => {
                       navigate("impressum");
@@ -516,7 +524,7 @@ export default function App() {
               placeholder="Events suchen…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-secondary border border-white/10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-fuchsia-500/50 transition-colors"
+              className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-[#F7F2FF] border border-[#A89CC8] text-sm text-[#261B36] placeholder:text-[#6A5C86] focus:outline-none focus:border-[#8B5CF6] transition-colors"
             />
             {search && (
               <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label="Suche löschen">
@@ -534,7 +542,7 @@ export default function App() {
                   className={`px-3.5 py-1.5 rounded-full text-sm whitespace-nowrap transition-all font-semibold border ${
                     activeCategory === cat.id
                       ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-md`
-                      : "bg-secondary border-white/10 text-muted-foreground hover:border-white/20 hover:text-foreground"
+                      : "bg-[#F7F2FF] border-[#A89CC8] text-[#261B36] hover:border-[#8B5CF6] hover:bg-[#F0E8FF]"
                   }`}
                 >
                   {cat.label}
@@ -548,18 +556,13 @@ export default function App() {
       {route === "home" ? (
         <div
           className="px-5 py-7 text-center relative overflow-hidden"
-          style={{ background: "linear-gradient(180deg, #1a0d2e 0%, #0f0b1a 100%)" }}
+          style={{ background: "linear-gradient(180deg, #f4ecff 0%, #f5f0ff 100%)" }}
         >
           <div
-            className="absolute inset-0 opacity-30 pointer-events-none"
-            style={{ background: "radial-gradient(ellipse at 25% 60%, #c026d3 0%, transparent 55%), radial-gradient(ellipse at 75% 40%, #7c3aed 0%, transparent 55%)" }}
+            className="absolute inset-0 opacity-60 pointer-events-none"
+            style={{ background: "radial-gradient(ellipse at 25% 60%, rgba(139, 92, 246, 0.18), transparent 55%), radial-gradient(ellipse at 75% 40%, rgba(168, 156, 200, 0.24), transparent 55%)" }}
           />
           <div className="relative z-10">
-            <div className="flex justify-center gap-1 mb-2">
-              {RAINBOW_DOTS.map((dot, i) => (
-                <span key={i} className="text-lg">{dot}</span>
-              ))}
-            </div>
             <p className="text-muted-foreground text-sm max-w-xs mx-auto leading-relaxed">
               Dein Guide für queere Veranstaltungen, Community-Treffpunkte und LGBTQ+ Leben in Aachen.
             </p>
@@ -608,7 +611,7 @@ export default function App() {
 
       {/* Bottom bar – Event vorschlagen */}
       {SHOW_FOOTER && route !== "vorschlagen" && (
-        <nav className="fixed bottom-0 left-0 right-0 z-30 bg-card/90 backdrop-blur-xl border-t border-white/10">
+        <nav className="fixed bottom-0 left-0 right-0 z-30 bg-[#FFFFFF]/95 backdrop-blur-xl border-t border-[#A89CC8]/30">
           <div className="px-4 py-3">
             <button
               onClick={() => navigate("vorschlagen")}
