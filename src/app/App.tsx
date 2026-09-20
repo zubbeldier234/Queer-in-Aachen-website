@@ -520,7 +520,7 @@ export default function App() {
       </header>
 
       {route === "home" && (
-        <div className="px-4 pb-3 space-y-3">
+        <div className="px-4 pt-3 pb-3 space-y-3">
           <div className="relative">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <input
@@ -528,7 +528,7 @@ export default function App() {
               placeholder="Events suchen…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-[#F7F2FF] border border-[#A89CC8] text-sm text-[#261B36] placeholder:text-[#6A5C86] focus:outline-none focus:border-[#8B5CF6] transition-colors"
+              className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-[#F7F2FF] border border-[#A89CC8] text-base text-[#261B36] placeholder:text-[#6A5C86] focus:outline-none focus:border-[#8B5CF6] transition-colors"
             />
             {search && (
               <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label="Suche löschen">
